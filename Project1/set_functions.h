@@ -10,6 +10,8 @@
 
 float display_array[NUM_ROWS][NUM_TLCS * 16];// 8 * 192 (64r-64g-64b)this is where the LED data is actually stored. Channel value is a float between 0 (0%) to 1.0f (100%).
 
+float display_buffer[NUM_ROWS*8][NUM_TLCS * 16 * 8];
+
 //Each row can be thought of a chess board 8x8 LEDs, each LED has 3 separate values one for each of R G and B. So each "row" has 3 chess boards of values. 
 
 
