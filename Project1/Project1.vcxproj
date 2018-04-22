@@ -71,8 +71,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>P:\developer\Vespine\Project1\dependencies;$(IncludePath)</IncludePath>
-    <LibraryPath>P:\developer\Vespine\Project1\dependencies;$(LibraryPath)</LibraryPath>
+    <IncludePath>P:\developer\Vespine\Source\Repos\LED_Cube_Simulator\dependencies;$(IncludePath)</IncludePath>
+    <LibraryPath>P:\developer\Vespine\Source\Repos\LED_Cube_Simulator\dependencies;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -81,6 +81,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>P:\developer\Vespine\Source\Repos\LED_Cube_Simulator\dependencies</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>opengl32.lib;glfw3.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -125,6 +126,9 @@
   <ItemGroup>
     <ClCompile Include="cubes.cpp" />
     <ClCompile Include="glad.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="set_functions.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
