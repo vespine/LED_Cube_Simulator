@@ -13,10 +13,10 @@ instead of testing it on my cube I thought it would be a good idea to create a s
 
 Work so far and goals:
 
-Runs multithreaded, main thread is left to mostly work on render, separate thread is being used to generate the patterns.
+Runs multithreaded, main thread is left to mostly work on render. I thought putting render in a second thread would be a good idea but I believe the OpenGL libraries are bound to the main thread, so the pattern generation is currently on a second thread. That shouls eventually turn into just data input.
 
-Implemented transparency
+Implemented transparency and anti aliasing.
 
-investigate possibility of using lighting, seems unlikely.
+investigate possibility of using opengl lighting and shading, seems unlikely at this point.
 
 add serial interface, possibly add network itnerface. 
