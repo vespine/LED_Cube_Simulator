@@ -10,6 +10,7 @@
 
 #include <learnopengl/shader_m.h>
 #include <learnopengl/camera.h>
+#include <learnopengl/model.h>
 
 #include <iostream>
 #include "set_functions.h"
@@ -25,7 +26,7 @@
 
 auto g_lock()
 {
-	static std::mutex m; // a global living mutyex
+	static std::mutex m; // a global living mutex
 	return std::unique_lock<decltype(m)>(m); // RAII based lock
 }
 
@@ -38,6 +39,26 @@ void processInput(GLFWwindow *window);
 // settings
 const unsigned int SCR_WIDTH = 1920;
 const unsigned int SCR_HEIGHT = 1080;
+
+
+float cube_transparency = 0.08f; //transparency of "off" LEDs
+float scale = 0.14; // size of LED "cubes"
+
+
+//initialize some variables
+float redvalue = 0;
+float greenvalue = 0;
+float bluevalue = 0;
+float alphax = cube_transparency;
+int rowi = 0;
+int boxindex = 0;
+int funci = 0;
+bool pause = 0; //used for space to pause pattern
+bool threadrunning = 0; 
+bool termin = 0; //thread termination 
+
+
+
 
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 7.0f));
@@ -53,9 +74,6 @@ float lastFrame = 0.0f;
 
 // set up vertex data (and buffer(s)) and configure vertex attributes
 // ------------------------------------------------------------------
-//cube scale
-
-float scale = 0.06; // size of LED "cubes"
 
 
 float vertxone = 1.0f; // vertex setup do not modify
@@ -112,22 +130,33 @@ float vertices[] = {
 glm::vec3 translations[512];
 unsigned int VBO, VAO;
 
-float redvalue = 0;
-float greenvalue = 0;
-float bluevalue = 0;
-
-int rowi = 0;
-int boxindex = 0;
-int funci = 0;
-bool threadrunning = 0;
-bool termin = 0;
 
 
-void func_1()
+
+
+
+		
+void func_2()//test thread
+{
+	while (termin == 0)
+	{
+		display_array[0][0] = 0.01f;
+		display_array[0][0] = display_buffer[0][0];
+
+	}
+}
+
+
+
+
+
+void func_1() //pattern drawring thread
 {
 	threadrunning = TRUE;
 	while (termin == 0)
 	{
+
+	
 
 		using namespace std::literals;
 		std::this_thread::sleep_for(1ms);
@@ -144,20 +173,16 @@ void func_1()
 		int z;
 		int l;
 		int add;
-
+		auto lk = g_lock();
 		for (l = 0; l < loop; l++)
 		{
 			x = (rand() % 800) / 100;
 			y = (rand() % 800) / 100;
 			z = (rand() % 800) / 100;
 			h = (rand() % 3600) / 10;
-
-
-
-
-
+			
 			set_xhue(x, y, z, h);
-			for (add = 0; add < 4; add++)
+			for (add = 0; add < 6; add++)
 			{
 				h = h + 30;
 
@@ -177,10 +202,17 @@ void func_1()
 				set_xhue(x - add, y, z - add, h);
 				//DelayMs(speed);
 				std::this_thread::sleep_for(150ms);
+
+				if (pause == 1) {
+					std::this_thread::sleep_for(150000ms);
+				}
+
+				
+
 			}
 
 
-			for (add = 0; add < 7; add++)
+			for (add = 0; add < 9; add++)
 			{
 				std::this_thread::sleep_for(50ms);
 				//DelayMs(speed / 2);
@@ -204,18 +236,19 @@ void func_1()
 				set_xr(x - add, y, z - add, 0, 0, 0);
 
 
-
+				
 				std::this_thread::sleep_for(50ms);
-
+				if (pause == 1) {
+					std::this_thread::sleep_for(150000ms);
+				}
 
 			}
 			//set_all(0);
-
+			
 
 
 
 		}
-
 	}//termin
 
 
@@ -226,10 +259,9 @@ void func_1()
 
 
 
-
-
 int main()
 {
+	
 	// glfw: initialize and configure
 	// ------------------------------
 	glfwInit();
@@ -268,39 +300,17 @@ int main()
 
 	// configure global opengl state
 	// -----------------------------
-	glEnable(GL_DEPTH_TEST);
+	//glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
 	// build and compile our shader zprogram
 	// ------------------------------------
 	Shader ourShader("1LedCube.vs", "1LedCube.fs");
 
 
-
-	// world space positions of our cubes
-
-
-	int index = 0;
-	float offset = 0.1f;
-
-	for (int y = -8; y < 8; y += 2)
-	{
-		for (int z = -8; z < 8; z += 2)
-		{
-			for (int x = -8; x < 8; x += 2)
-			{
-				glm::vec3 translation;
-				translation.x = (float)x / 5.0f + offset;
-				translation.y = (float)y / 5.0f + offset;
-				translation.z = (float)z / 5.0f + offset;
-				translations[index++] = translation;
-			}
-		}
-	}
-
-
-
-
-
+	
 	//configure buffer objects 
 
 
@@ -325,9 +335,28 @@ int main()
 
 
 	//int ledloop = 0;
+	// world space positions of our cubes
+	//glm::vec3 translation;
+	int index = 0;
+	float offset = 0.1f;
 
+	for (int y = -8; y < 8; y += 2)
+	{
+		for (int z = -8; z < 8; z += 2)
+		{
+			for (int x = -8; x < 8; x += 2)
+			{
+				glm::vec3 translation;
+				translation.x = (float)x / 5.0f + offset;
+				translation.y = (float)y / 5.0f + offset;
+				translation.z = (float)z / 5.0f + offset;
+				translations[index++] = translation;
+			}
+		}
+	}
 
 	std::thread t1(func_1);
+	std::thread t2(func_2);
 
 	// render loop
 	// -----------
@@ -343,6 +372,7 @@ int main()
 		// -----
 		processInput(window);
 
+
 		// render
 		// ------
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -353,12 +383,7 @@ int main()
 		// activate shader
 		ourShader.use();
 
-
-
-
-
-
-
+		
 
 		// pass projection matrix to shader (note that in this case it could change every frame)
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
@@ -370,14 +395,6 @@ int main()
 
 
 		
-		
-		//set_allhue(100);
-		//set_rowhue(stepper++, huec++);
-		//if (stepper == 8)stepper = 0;
-		//if (huec == 360)huec = 1;
-	
-
-
 		
 		// render boxes
 		glBindVertexArray(VAO);
@@ -397,9 +414,14 @@ int main()
 			greenvalue = display_array[rowi][boxindex%64 + 64];
 			bluevalue = display_array[rowi][boxindex%64 + 128];
 		
+
 			ourShader.setFloat("red", redvalue);
 			ourShader.setFloat("green", greenvalue);
 			ourShader.setFloat("blue", bluevalue);
+
+			//transparency is inversely proportional to color value.
+			alphax = cube_transparency +(redvalue + bluevalue + greenvalue) / 3;
+			ourShader.setFloat("alphaf", alphax);
 
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
@@ -442,6 +464,10 @@ void processInput(GLFWwindow *window)
 		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.ProcessKeyboard(RIGHT, deltaTime);
+
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+		pause = !pause;
+
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
