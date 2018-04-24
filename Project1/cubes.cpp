@@ -207,6 +207,7 @@ void func_1() //pattern drawring thread
 					std::this_thread::sleep_for(150000ms);
 				}
 
+				if (termin == 1) std::terminate(); //dirty exit
 				
 
 			}
@@ -241,6 +242,8 @@ void func_1() //pattern drawring thread
 				if (pause == 1) {
 					std::this_thread::sleep_for(150000ms);
 				}
+			
+				if (termin == 1) std::terminate(); //dirty exit
 
 			}
 			//set_all(0);
@@ -268,6 +271,7 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_SAMPLES, 4);
 
 #ifdef __APPLE__
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // uncomment this statement to fix compilation on OS X
@@ -301,6 +305,7 @@ int main()
 	// configure global opengl state
 	// -----------------------------
 	//glEnable(GL_DEPTH_TEST);
+	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_BLEND);
 	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
