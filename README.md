@@ -10,6 +10,8 @@ This code is built entirely ontop of the fantastic examples and tutorials at htt
 
 The goal of this software is to eventually accept input from any external pattern "source". 
 
+I am NOT a "programmer" and I'm not very good at any programming language, so please forgive my lack of style and function. 
+
 I want to create a LED Cube "pattern generator" on a Raspberry Pi to use for my physical cube, but instead of having to test it on the real cube, which is big and hard to move around, I thought it would be a good idea to create a simulator first, for testing but also for learning purposes. I looked around and although it appears a few people have programmed "pettern generators" for their own cubes, I could not actually find any existing LED Cube Simulators and certainly none that are open source or documented. 
 
 
