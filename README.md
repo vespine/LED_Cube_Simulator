@@ -1,5 +1,6 @@
 # LED_Cube_Simulator
 Software simulator of an 8x8x8 RGB LED Cube in C++ and OpenGL.
+
 The physical version can be found at http://www.vespine.com/ 
 
 This code is working now, but there are several libraries and includes that have to be configured, all included in the repository. 
