@@ -196,17 +196,19 @@ void hue_run(int loop, int speed)
 }//cross_star
 
 
+/*
 
-
-
-
-
-
-
-void hue_star(int loop, int speed)
+void hue_star()
 {
-	
 
+	using namespace std::literals;
+	std::this_thread::sleep_for(1ms);
+
+	//	set_allhue(funci++);
+	//	if (funci == 360) funci = 1;
+	//	auto lk = g_lock();
+
+	int loop = 1000;
 
 	int h;
 	int x;
@@ -214,20 +216,16 @@ void hue_star(int loop, int speed)
 	int z;
 	int l;
 	int add;
-
-	for (l = 0; l<loop; l++)
+	auto lk = g_lock();
+	for (l = 0; l < loop; l++)
 	{
 		x = (rand() % 800) / 100;
 		y = (rand() % 800) / 100;
 		z = (rand() % 800) / 100;
 		h = (rand() % 3600) / 10;
 
-
-
-
-
 		set_xhue(x, y, z, h);
-		for (add = 0; add<4; add++)
+		for (add = 0; add < 7; add++)
 		{
 			h = h + 30;
 
@@ -246,13 +244,20 @@ void hue_star(int loop, int speed)
 			set_xhue(x + add, y, z - add, h);
 			set_xhue(x - add, y, z - add, h);
 			//DelayMs(speed);
+			std::this_thread::sleep_for(150ms);
+
+			if (pause == 1) {
+				std::this_thread::sleep_for(150000ms);
+			}
+
+
 
 		}
 
 
-		for (add = 0; add<7; add++)
+		for (add = 0; add < 7; add++)
 		{
-
+			std::this_thread::sleep_for(50ms);
 			//DelayMs(speed / 2);
 			set_xr(x + add, y, z, 0, 0, 0);
 			set_xr(x - add, y, z, 0, 0, 0);
@@ -275,18 +280,19 @@ void hue_star(int loop, int speed)
 
 
 
-			//std::this_thread::sleep_for(20ms);
-
+			std::this_thread::sleep_for(50ms);
+			if (pause == 1) {
+				std::this_thread::sleep_for(150000ms);
+			}
 
 		}
 		//set_all(0);
+	}
+}
 
-	}//for loop
 
 
-
-}//hue_star
-
+*/
 
 
 

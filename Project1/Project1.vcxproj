@@ -128,7 +128,11 @@
     <ClCompile Include="glad.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="patterns.h" />
     <ClInclude Include="set_functions.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="serial code.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,0 +1,38 @@
+           /*------------------------------------ Setting WaitComm() Event   ----------------------------------------*/
+			
+			printf("\n\n    Waiting for Data Reception");
+
+			Status = WaitCommEvent(hComm, &dwEventMask, NULL); //Wait for the character to be received
+	
+			/*-------------------------- Program will Wait here till a Character is received ------------------------*/				
+
+			if (Status == FALSE)
+				{
+					printf("\n    Error! in Setting WaitCommEvent()");
+				}
+			else //If  WaitCommEvent()==True Read the RXed data using ReadFile();
+				{
+					printf("\n\n    Characters Received");
+					do
+						{
+							Status = ReadFile(hComm, &TempChar, sizeof(TempChar), &NoBytesRead, NULL);
+							SerialBuffer[i] = TempChar;
+							i++;
+					    }
+					while (NoBytesRead > 0);
+
+					
+
+					/*------------Printing the RXed String to Console----------------------*/
+
+					printf("\n\n    ");
+					int j =0;
+					for (j = 0; j < i-1; j++)		// j < i-1 to remove the dupliated last character
+						printf("%c", SerialBuffer[j]);
+		
+				}	
+		
+				CloseHandle(hComm);//Closing the Serial Port
+				printf("\n +==========================================+\n");
+				_getch();
+		}//End of Main()
