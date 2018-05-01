@@ -35,4 +35,12 @@
       <Filter>Resource Files</Filter>
     </Text>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="1LedCube.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="1LedCube.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

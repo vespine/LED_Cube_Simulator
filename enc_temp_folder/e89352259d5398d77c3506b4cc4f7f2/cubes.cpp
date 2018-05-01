@@ -216,11 +216,9 @@ void func_2()//test thread, not implemented yet
 void func_1() //pattern drawring thread. 
 
 {
-
-
-	//test_pattern
-	/*
 	
+
+
 	while (1 == 1)
 	{
 
@@ -245,7 +243,7 @@ void func_1() //pattern drawring thread.
 		}//for loop
 	}
 
-	*/
+
 
 
 

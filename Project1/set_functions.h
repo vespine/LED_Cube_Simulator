@@ -51,7 +51,7 @@ static void set_rowRGB(unsigned char row, float R, float G, float B)
 
 	for (ch = 0; ch<64; ch++)
 	{
-		display_array[row][ch] = B;
+		display_array[row][ch] = R;
 	}
 	for (ch = 64; ch<128; ch++)
 	{
@@ -59,7 +59,7 @@ static void set_rowRGB(unsigned char row, float R, float G, float B)
 	}
 	for (ch = 128; ch<192; ch++)
 	{
-		display_array[row][ch] = R;
+		display_array[row][ch] = B;
 	}
 
 }//set_rowRGB
