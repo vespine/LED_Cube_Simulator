@@ -28,7 +28,13 @@
 #include <string.h>
 
 #include <windows.h>
+#include <iostream>
+#include <boost/array.hpp>
+#include <boost/asio.hpp>
 
+
+
+#define PATTERN_SERVER "raspberrypi"
 
 
 
@@ -39,6 +45,10 @@ auto g_lock()
 	static std::mutex m; // a global living mutex
 	return std::unique_lock<decltype(m)>(m); // RAII based lock
 }
+
+
+//boost asio init
+using boost::asio::ip::tcp;
 
 //Some GLFW inits
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -210,8 +220,7 @@ void func_2()//test thread, not implemented yet
 void func_1() //pattern drawring thread. 
 
 {
-
-
+	
 	//test_pattern
 	
 	/*
@@ -234,17 +243,21 @@ void func_1() //pattern drawring thread.
 	}
 	*/
 
-
-
-
-
-
-
-
-
-
+	
 	threadrunning = TRUE; //init thread flag
 	
+
+
+
+
+
+
+
+
+
+
+
+
 	while (termin == 0) //this doesn't work properly, the solution is std::promise and std::future, need to figure this out 
 	{
 
@@ -405,8 +418,7 @@ void func_1() //pattern drawring thread.
 
 		}
 
-
-
+		
 		CloseHandle(hComm);//Closing the Serial Port
 		printf("\n +==========================================+\n");
 		//_getch();
@@ -414,18 +426,9 @@ void func_1() //pattern drawring thread.
 
 
 
-
-
-
-
-
-
-
-
-
 	}//termin
 
-
+	
 	
 }
 
