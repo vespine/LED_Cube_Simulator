@@ -10,7 +10,7 @@
 
 float display_array[NUM_ROWS][NUM_TLCS * 16];// 8 * 192 (64r-64g-64b)this is where the LED data is actually stored. Channel value is a float between 0 (0%) to 1.0f (100%).
 
-float display_buffer[NUM_ROWS*8][NUM_TLCS * 16 * 8];
+char display_buffer[NUM_ROWS][NUM_TLCS * 16];
 
 //Each row can be thought of a chess board 8x8 LEDs, each LED has 3 separate values one for each of R G and B. So each "row" has 3 chess boards of values. 
 
@@ -111,20 +111,20 @@ static void set_xhue(char x, char y, char z, int hue) {
 	float re, gr, bl;
 	hue = hue % 360;
 	if (hue <= 120) {
-		re = ((120 - hue) * 100) / 100;
-		gr = (hue * 100) / 120;
-		bl = 0;
+		re = (float)((120 - hue) * 100) / 100;
+		gr = (float)(hue * 100) / 120;
+		bl = (float)0;
 
 	}
 	else if (hue <= 240) {
-		re = 0;
-		gr = ((240 - hue) * 100) / 120;
-		bl = ((hue - 120) * 100) / 120;
+		re = (float)0;
+		gr = (float)((240 - hue) * 100) / 120;
+		bl = (float)((hue - 120) * 100) / 120;
 	}
 	else {
-		re = ((hue - 240) * 100) / 120;
-		gr = 0;
-		bl = ((360 - hue) * 100) / 120;
+		re = (float)((hue - 240) * 100) / 120;
+		gr = (float)0;
+		bl = (float)((360 - hue) * 100) / 120;
 	}
 	set_xr(x, y, z, re / 100, gr / 100, bl / 100);
 
@@ -170,7 +170,7 @@ int l;
 
 
 
-
+/*
 void hue_run(int loop, int speed)
 {
 
@@ -194,7 +194,7 @@ void hue_run(int loop, int speed)
 
 	}//for loop
 }//cross_star
-
+*/
 
 /*
 
