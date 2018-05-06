@@ -26,5 +26,21 @@
     <ClInclude Include="set_functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="patterns.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="serial code.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="1LedCube.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="1LedCube.vs">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
