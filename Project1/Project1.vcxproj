@@ -133,9 +133,6 @@
     <ClInclude Include="set_functions.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="serial code.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="1LedCube.fs" />
     <None Include="1LedCube.vs" />
   </ItemGroup>

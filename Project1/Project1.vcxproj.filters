@@ -31,11 +31,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="serial code.txt">
-      <Filter>Resource Files</Filter>
-    </Text>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="1LedCube.fs">
       <Filter>Resource Files</Filter>
     </None>

@@ -4,7 +4,7 @@
 
 
 
-#define NUM_TLCS   12 //how many TLCs in serial, (TLC = 15 channels) this is taken from the arduino tlc library.
+#define NUM_TLCS   12 //how many TLCs in series, (TLC = 15 channels) this is taken from the arduino tlc library.
 #define NUM_ROWS   8 //how many multiplexed rows
 
 
@@ -22,7 +22,7 @@ display_array[row][NUM_TLCS * 16 - 1 - channel] = value;
 
 
 
-
+//set a whole 
 static void set_row(unsigned char row, float value)
 {
 	int rowlen = (NUM_TLCS * 16);

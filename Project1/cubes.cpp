@@ -34,13 +34,13 @@
 
 
 
-
+#define ONLINE TRUE		//RUN MODE ONLINE TRUE = from network, FALSE = internal patters. 
 #define PATTERN_SERVER "raspberrypi"
 #define RESOLUTION_WIDTH 1920
 #define RESOLUTION_HEIGHT 1080
-#define TRANSPARENCY 0.1f //Blank LED "opaqueness" + 0.0f-1.0f (0% = invisible - 100% = solid), "lit" leds are proportionatelly less translucent.
-#define LED_SCALE 0.1f //default 0.10f
-#define SIZE_SCALE 0.1f //default 0.10f
+#define TRANSPARENCY 0.1f	//Blank LED "opaqueness" + 0.0f-1.0f (0% = invisible - 100% = solid), "lit" leds are proportionatelly less translucent.
+#define LED_SCALE 0.1f		//default 0.10f
+#define SIZE_SCALE 0.1f		//default 0.10f
 
 using boost::asio::ip::tcp;
 
@@ -205,64 +205,71 @@ void func_2()//test thread, not implemented yet
 	}
 }
 
-void func_1() //pattern drawring thread. 
+void func_1() //pattern drawring / network input thread. 
 {
 	threadrunning = TRUE; //init thread flag
 
-	//test_pattern can be used in place of "input" stream
-	/*
-	while (1 == 1)
+	if (ONLINE != TRUE)
 	{
-	for (int l = 0; l<100; l++)
-	{
-	for (int x = 0; x<8; x++)
-	for (int y = 0; y<8; y++)
-	for (int z = 0; z<8; z++)
-	{
-	set_xhue(x, y, z, h++);
-	if (x == 8) x = 0;
-	if (y == 8) y = 0;
-	if (z == 8) z = 0;
-
-	std::this_thread::sleep_for(10ms);
-	}
-	}//for loop
-	}
-	*/
-
-	try
-	{
-		boost::asio::io_service io_service;
-
-		tcp::resolver resolver(io_service);
-		tcp::resolver::query query(PATTERN_SERVER, "daytime");
-		tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-
-		tcp::socket socket(io_service);
-		
-		//int buffcount = 0;
-		while (termin==0)
+		while (termin == 0)
 		{
-			//frame count, uses int buffcount = 0 above
-			//std::cout << "received buffer" << buffcount << std::endl;
-			//buffcount++;
+			//offline run mode, patterns can be placed here. 
+			
+			display_buffer[0][0] = 100;
+			cout << display_array[0][0] << endl;
 
-			boost::asio::connect(socket, endpoint_iterator);
-			boost::system::error_code error;
-			size_t len = socket.read_some(boost::asio::buffer(display_buffer), error);
-		
-			std::this_thread::sleep_for(2ms); //prevent free running loop in thread
+
+
+		std::this_thread::sleep_for(10ms);
+
 		}
+	
+		
 	}
-	catch (std::exception& e)
+
+	if (ONLINE == TRUE)
 	{
-		std::cerr << e.what() << std::endl;
+		//online run mode, connect to pattern server
+		try
+		{
+			boost::asio::io_service io_service;
+
+			tcp::resolver resolver(io_service);
+			tcp::resolver::query query(PATTERN_SERVER, "daytime");
+			tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+
+			tcp::socket socket(io_service);
+
+			//int buffcount = 0;
+			while (termin == 0)
+			{
+				//frame count, uses int buffcount = 0 above
+				//std::cout << "received buffer" << buffcount << std::endl;
+				//buffcount++;
+
+				boost::asio::connect(socket, endpoint_iterator);
+				boost::system::error_code error;
+				size_t len = socket.read_some(boost::asio::buffer(display_buffer), error);
+
+				std::this_thread::sleep_for(2ms); //prevent free running loop in thread
+			}
+		}
+		catch (std::exception& e)
+		{
+			std::cerr << e.what() << std::endl;
+		}
+
 	}
 }
 
 
 int main()
 {
+
+
+	cout << "resolution set to " << RESOLUTION_WIDTH << " x " << RESOLUTION_HEIGHT << endl;
+
+
 	// glfw: initialize and configure
 	// ------------------------------
 	glfwInit();
@@ -449,19 +456,16 @@ int main()
 			//just noticed transparency works from one direction but is wrong when looking from the other side. 
 			//chose highstest value out of RGB and give the cube that alpha(opaqueness) value. 
 			alphax = redvalue;
-			if (alphax < bluevalue)
-			{
+			if (alphax < bluevalue){
 				alphax = bluevalue;
 			};
 
-			if (alphax < greenvalue)
-			{
+			if (alphax < greenvalue){
 				alphax = greenvalue;
 			};
 
 			alphax = alphax + cube_transparency;
-			if (alphax > 1.0f)
-			{
+			if (alphax > 1.0f){
 				alphax = 1.0f;
 			};
 			
