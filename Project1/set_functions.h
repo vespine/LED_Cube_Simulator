@@ -4,28 +4,33 @@
 
 
 
-#define NUM_TLCS   12 //how many TLCs in series, (TLC = 15 channels) this is taken from the arduino tlc library.
-#define NUM_ROWS   8 //how many multiplexed rows
+//#define NUM_TLCS   12 //how many TLCs in series, (TLC = 15 channels) this is taken from the arduino tlc library.
+///#define NUM_ROWS   8 //how many multiplexed rows
 
 
-float display_array[NUM_ROWS][NUM_TLCS * 16];// 8 * 192 (64r-64g-64b)this is where the LED data is actually stored. Channel value is a float between 0 (0%) to 1.0f (100%).
+//char display_array[CUBE_SIZE][NUM_TLCS * 16];// 8 * 192 (64r-64g-64b)this is where the LED data is actually stored. Channel value is a float between 0 (0%) to 1.0f (100%).
 
-char display_buffer[NUM_ROWS][NUM_TLCS * 16];
+//char display_buffer[CUBE_SIZE][NUM_TLCS * 16];
 
 //Each row can be thought of a chess board 8x8 LEDs, each LED has 3 separate values one for each of R G and B. So each "row" has 3 chess boards of values. 
 
+float h = 0;
+int x;
+int y;
+int z;
+int l;
 
-void set(unsigned char row, unsigned char channel, float value) //very simple! set a single value to a specified spot on the matrix. 
+void set(unsigned char row, unsigned char channel, char value) //very simple! set a single value to a specified spot on the matrix. 
 {
-display_array[row][NUM_TLCS * 16 - 1 - channel] = value;
+display_array[row][NUM_PLANE * 3 - 1 - channel] = value;
 }//set
 
 
 
 //set a whole 
-static void set_row(unsigned char row, float value)
+static void set_row(unsigned char row, char value)
 {
-	int rowlen = (NUM_TLCS * 16);
+	int rowlen = (NUM_PLANE * 3);
 	int countleds;
 	for (countleds = 0; countleds < rowlen; countleds++)
 	{
@@ -36,15 +41,15 @@ static void set_row(unsigned char row, float value)
 
 
 
-static void set_all(float value)
+static void set_all(char value)
 {
 	int row;
-	for (row = 0; row < NUM_ROWS; row++)
+	for (row = 0; row < CUBE_SIZE; row++)
 		set_row(row, value);
 }//set_all
 
 
-static void set_rowRGB(unsigned char row, float R, float G, float B)
+static void set_rowRGB(unsigned char row, char R, char G, char B)
 {
 
 	int ch;
@@ -68,11 +73,11 @@ static void set_rowRGB(unsigned char row, float R, float G, float B)
 
 
 
-static void set_allRGB(float R, float G, float B)
+static void set_allRGB(char R, char G, char B)
 {
 
 	unsigned char row;
-	for (row = 0; row < NUM_ROWS; row++)
+	for (row = 0; row < CUBE_SIZE; row++)
 	{
 		set_rowRGB(row, R, G, B);
 	}
@@ -80,60 +85,60 @@ static void set_allRGB(float R, float G, float B)
 }//set_allRGB
 
 
-static void set_xr(char x, char y, char z, float R, float G, float B)
+static void set_xr(char x, char y, char z, char R, char G, char B)
 {
 
 
 	if (x<0)
 		x = 0;
-	if (x>7)
-		x = 7;
+	if (x>(CUBE_SIZE-1))
+		x = CUBE_SIZE - 1;
 	if (y<0)
 		y = 0;
-	if (y>7)
-		y = 7;
+	if (y>(CUBE_SIZE - 1))
+		y = CUBE_SIZE - 1;
 	if (z<0)
 		z = 0;
-	if (z>7)
-		z = 7;
+	if (z>(CUBE_SIZE - 1))
+		z = CUBE_SIZE - 1;
 
 
 
 
-	display_array[x][NUM_TLCS * 16 - 1 - y - z * 8] = R;
-	display_array[x][NUM_TLCS * 16 - 1 - 64 - y - z * 8] = G;
-	display_array[x][NUM_TLCS * 16 - 1 - 128 - y - z * 8] = B;
+	display_array[x][NUM_PLANE * 3 - 1 - y - z * CUBE_SIZE] = R;
+	display_array[x][NUM_PLANE * 3 - 1 - NUM_PLANE - y - z * CUBE_SIZE] = G;
+	display_array[x][NUM_PLANE * 3 - 1 - NUM_PLANE*2- y - z * CUBE_SIZE] = B;
 
 }//set_xyzrgb
 
 
 static void set_xhue(char x, char y, char z, int hue) {
-	float re, gr, bl;
+	char re, gr, bl;
 	hue = hue % 360;
 	if (hue <= 120) {
-		re = (float)((120 - hue) * 100) / 100;
-		gr = (float)(hue * 100) / 120;
-		bl = (float)0;
+		re = ((120 - hue) * 100) / 100;
+		gr = (hue * 100) / 120;
+		bl = 0;
 
 	}
 	else if (hue <= 240) {
-		re = (float)0;
-		gr = (float)((240 - hue) * 100) / 120;
-		bl = (float)((hue - 120) * 100) / 120;
+		re = 0;
+		gr = ((240 - hue) * 100) / 120;
+		bl = ((hue - 120) * 100) / 120;
 	}
 	else {
-		re = (float)((hue - 240) * 100) / 120;
-		gr = (float)0;
-		bl = (float)((360 - hue) * 100) / 120;
+		re = ((hue - 240) * 100) / 120;
+		gr = 0;
+		bl = ((360 - hue) * 100) / 120;
 	}
-	set_xr(x, y, z, re / 100, gr / 100, bl / 100);
+	set_xr(x, y, z, re, gr, bl);
 
 }//set_xhue
 
 
 
 
-static void set_rowhue(unsigned char row, int hue)
+static void set_rowhue(char row, int hue)
 {
 
 	int y;
@@ -154,19 +159,14 @@ static void set_rowhue(unsigned char row, int hue)
 static void set_allhue(int hue)
 {
 	int row;
-	for (row = 0; row < NUM_ROWS; row++)
+	for (row = 0; row < CUBE_SIZE; row++)
 		set_rowhue(row, hue);
 }//set_all
 
-int stepper = 0;
-int huec = 0;
 
 
-float h = 0;
-int x;
-int y;
-int z;
-int l;
+
+
 
 
 
@@ -193,7 +193,7 @@ void hue_run(int loop, int speed)
 				}
 
 	}//for loop
-}//cross_star
+}//
 */
 
 /*

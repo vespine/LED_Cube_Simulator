@@ -12,7 +12,7 @@
 #include <learnopengl/mesh.h>
 
 #include <iostream>
-#include "set_functions.h"
+
 #include "patterns.h"
 
 #include <string>
@@ -34,13 +34,21 @@
 
 
 
-#define ONLINE TRUE		//RUN MODE ONLINE TRUE = from network, FALSE = internal patters. 
+#define ONLINE FALSE		//RUN MODE ONLINE TRUE = from network, FALSE = internal patters. 
 #define PATTERN_SERVER "raspberrypi"
 #define RESOLUTION_WIDTH 1920
 #define RESOLUTION_HEIGHT 1080
 #define TRANSPARENCY 0.1f	//Blank LED "opaqueness" + 0.0f-1.0f (0% = invisible - 100% = solid), "lit" leds are proportionatelly less translucent.
-#define LED_SCALE 0.1f		//default 0.10f
-#define SIZE_SCALE 0.1f		//default 0.10f
+#define CUBE_SIZE 8 // 8 is default size, changing this value is not completely implemented. Use values above 32 at your own risk.
+#define LED_SCALE 1.0f		//default 1.0f
+#define SIZE_SCALE 1.0f		//default 1.0f
+
+const int NUM_PLANE = CUBE_SIZE * CUBE_SIZE;
+const int NUM_CUBE = CUBE_SIZE * CUBE_SIZE * CUBE_SIZE;
+
+char display_array[CUBE_SIZE][NUM_PLANE*3];
+
+#include "set_functions.h"
 
 using boost::asio::ip::tcp;
 
@@ -91,8 +99,8 @@ float lastFrame = 0.0f;
 
 // set up vertex data for cube object (and buffer(s)) and configure vertex attributes
 // ------------------------------------------------------------------
-float vertxone = 1.0f; // vertex setup do not modify
-float vertxtwo = 0.5f; // vertex setup do not modify
+float vertxone = 0.1f; // vertex setup do not modify
+float vertxtwo = 0.05f; // vertex setup do not modify
 
 float vertone = vertxone * scale;
 float verttwo = vertxtwo * scale;
@@ -142,7 +150,7 @@ float vertices[] = {
 
 };
 
-glm::vec3 translations[512]; //array holding cube index for "translated" cubes. Used to address each individual cube once drawn 512 times. 
+glm::vec3 translations[NUM_CUBE]; //array holding cube index for "translated" cubes. Used to address each individual cube once drawn 512 times. 
 unsigned int VBO, VAO;
 
 void func_2()//test thread, not implemented yet
@@ -213,18 +221,26 @@ void func_1() //pattern drawring / network input thread.
 	{
 		while (termin == 0)
 		{
-			//offline run mode, patterns can be placed here. 
-			
-			display_buffer[0][0] = 100;
-			cout << display_array[0][0] << endl;
+		//offline run mode, patterns can be placed below here here. 
+		//
+		//
 
-
-
-		std::this_thread::sleep_for(10ms);
-
-		}
-	
+				for (x = 0; x<CUBE_SIZE; x++)
+					for (y = 0; y<CUBE_SIZE; y++)
+						for (z = 0; z<CUBE_SIZE; z++)
+						{
+							set_xhue(x, y, z, h++);
+							std::this_thread::sleep_for(10ms);
+							if (x == CUBE_SIZE) x = 0;
+							if (y == CUBE_SIZE) y = 0;
+							if (z == CUBE_SIZE) z = 0;
+							if (h == 360) h = 0;
+						}
 		
+		//
+		//
+		//offline run mode, patterns can be placed above here. 
+		}
 	}
 
 	if (ONLINE == TRUE)
@@ -249,7 +265,7 @@ void func_1() //pattern drawring / network input thread.
 
 				boost::asio::connect(socket, endpoint_iterator);
 				boost::system::error_code error;
-				size_t len = socket.read_some(boost::asio::buffer(display_buffer), error);
+				size_t len = socket.read_some(boost::asio::buffer(display_array), error);
 
 				std::this_thread::sleep_for(2ms); //prevent free running loop in thread
 			}
@@ -258,17 +274,13 @@ void func_1() //pattern drawring / network input thread.
 		{
 			std::cerr << e.what() << std::endl;
 		}
-
 	}
 }
 
 
 int main()
 {
-
-
 	cout << "resolution set to " << RESOLUTION_WIDTH << " x " << RESOLUTION_HEIGHT << endl;
-
 
 	// glfw: initialize and configure
 	// ------------------------------
@@ -314,7 +326,7 @@ int main()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
 
-	// build and compile our shader zprogram
+	// build and compile shader zprogram
 	// ------------------------------------
 	Shader ourShader("1LedCube.vs", "1LedCube.fs");
 	
@@ -341,16 +353,16 @@ int main()
 	int index = 0;
 	float offset = SIZE_SCALE;
 
-	for (int y = -8; y < 8; y += 2)
+	for (int y = -CUBE_SIZE; y < CUBE_SIZE; y += 2)
 	{
-		for (int z = -8; z < 8; z += 2)
+		for (int z = -CUBE_SIZE; z < CUBE_SIZE; z += 2)
 		{
-			for (int x = -8; x < 8; x += 2)
+			for (int x = -CUBE_SIZE; x < CUBE_SIZE; x += 2)
 			{
 				//glm::vec3 translation;
-				translation.x = (float)x / 5.0f + offset;
-				translation.y = (float)y / 5.0f + offset;
-				translation.z = (float)z / 5.0f + offset;
+				translation.x = (float)x / 4.0f*offset;
+				translation.y = (float)y / 4.0f*offset;
+				translation.z = (float)z / 4.0f*offset;
 				translations[index++] = translation;
 			}
 		}
@@ -377,7 +389,7 @@ int main()
 		//sort needs to go here
 
 		std::map<float, glm::vec3> sorted;
-		for (unsigned int i = 0; i < 512; i++)
+		for (unsigned int i = 0; i < NUM_CUBE; i++)
 		{
 			float distance = glm::length(camera.Position - translation[i]);
 			sorted[distance] = translations[i];
@@ -426,7 +438,7 @@ int main()
 
 		*/
 
-		for (boxindex = 0; boxindex < 512; boxindex++)
+		for (boxindex = 0; boxindex < NUM_CUBE; boxindex++)
 		{
 			// calculate the model matrix for each object and pass it to shader before drawing
 			glm::mat4 model;
@@ -436,12 +448,12 @@ int main()
 			ourShader.setMat4("model", model);
 
 			//box index is just one long string of 512 LED 'indexes', each layer or "row" is 64 indexes long:
-			rowi = boxindex / 64;
+			rowi = boxindex / (NUM_PLANE);
 
 			//using mod operation to get individual R G and B values from the display_array to the correct "box index"
-			redvalue = display_buffer[rowi][boxindex % 64];
-			greenvalue = display_buffer[rowi][boxindex % 64 + 64];
-			bluevalue = display_buffer[rowi][boxindex % 64 + 128];
+			redvalue = display_array[rowi][boxindex % NUM_PLANE];
+			greenvalue = display_array[rowi][boxindex % NUM_PLANE + NUM_PLANE];
+			bluevalue = display_array[rowi][boxindex % NUM_PLANE + (NUM_PLANE*2)];
 
 			//display_array is "ints" in physical cube, but floats in openGL, below turns 0-100, to 0.0f-1.0f
 			redvalue = redvalue / 100;
