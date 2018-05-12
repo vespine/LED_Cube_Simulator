@@ -12,9 +12,6 @@
 #include <learnopengl/mesh.h>
 
 #include <iostream>
-
-#include "patterns.h"
-
 #include <string>
 #include <thread>
 #include <mutex>
@@ -26,19 +23,16 @@
 #include <string.h>
 
 #include <windows.h>
-
 #include <iostream>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 
 
-
-
-#define ONLINE FALSE		//RUN MODE ONLINE TRUE = from network, FALSE = internal patters. 
-#define PATTERN_SERVER "raspberrypi"
-#define RESOLUTION_WIDTH 1920
-#define RESOLUTION_HEIGHT 1080
-#define TRANSPARENCY 0.1f	//Blank LED "opaqueness" + 0.0f-1.0f (0% = invisible - 100% = solid), "lit" leds are proportionatelly less translucent.
+#define ONLINE FALSE		//RUN MODE ONLINE: TRUE = from network, FALSE = internal patters from patterns.h
+#define PATTERN_SERVER "raspberrypi" //host name of LED CUBE Pattern generator
+#define SCR_WIDTH 1920
+#define SCR_HEIGHT 1080
+#define TRANSPARENCY 0.1f	//Blank LED "opaqueness" : 0.0f-1.0f (0% = invisible - 100% = solid), "lit" leds are proportionatelly less translucent.
 #define CUBE_SIZE 8 // 8 is default size, changing this value is not completely implemented. Use values above 32 at your own risk.
 #define LED_SCALE 1.0f		//default 1.0f
 #define SIZE_SCALE 1.0f		//default 1.0f
@@ -46,9 +40,10 @@
 const int NUM_PLANE = CUBE_SIZE * CUBE_SIZE;
 const int NUM_CUBE = CUBE_SIZE * CUBE_SIZE * CUBE_SIZE;
 
-char display_array[CUBE_SIZE][NUM_PLANE*3];
+char display_array[CUBE_SIZE][NUM_PLANE * 3];
 
 #include "set_functions.h"
+#include "patterns.h"
 
 using boost::asio::ip::tcp;
 
@@ -66,25 +61,11 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 
-// display window resolution
-const unsigned int SCR_WIDTH = RESOLUTION_WIDTH;
-const unsigned int SCR_HEIGHT = RESOLUTION_HEIGHT;
-
-
-float cube_transparency = TRANSPARENCY; //transparency of "off" LEDs
-float scale = LED_SCALE; // size of LED "cubes"
-
-					//initialize some variables
-float redvalue = 0;
-float greenvalue = 0;
-float bluevalue = 0;
-float alphax = cube_transparency;
-int rowi = 0;
-int boxindex = 0;
-int funci = 0;
+//initialize some flags
 bool pause = 0; //used for spacebar to pause pattern, needs work
 bool threadrunning = 0; //flag for second thread
 bool termin = 0; //flag for thread termination, needs work 
+
 glm::vec3 translation;
 
 // camera setup
@@ -102,8 +83,8 @@ float lastFrame = 0.0f;
 float vertxone = 0.1f; // vertex setup do not modify
 float vertxtwo = 0.05f; // vertex setup do not modify
 
-float vertone = vertxone * scale;
-float verttwo = vertxtwo * scale;
+float vertone = vertxone * LED_SCALE;
+float verttwo = vertxtwo * LED_SCALE;
 
 float vertices[] = {
 	-verttwo, -verttwo, -verttwo,  0.0f, 0.0f,
@@ -147,7 +128,6 @@ float vertices[] = {
 	verttwo,  verttwo,  verttwo,  vertone, 0.0f,
 	-verttwo,  verttwo,  verttwo,  0.0f, 0.0f,
 	-verttwo,  verttwo, -verttwo,  0.0f, vertone
-
 };
 
 glm::vec3 translations[NUM_CUBE]; //array holding cube index for "translated" cubes. Used to address each individual cube once drawn 512 times. 
@@ -221,25 +201,7 @@ void func_1() //pattern drawring / network input thread.
 	{
 		while (termin == 0)
 		{
-		//offline run mode, patterns can be placed below here here. 
-		//
-		//
-
-				for (x = 0; x<CUBE_SIZE; x++)
-					for (y = 0; y<CUBE_SIZE; y++)
-						for (z = 0; z<CUBE_SIZE; z++)
-						{
-							set_xhue(x, y, z, h++);
-							std::this_thread::sleep_for(10ms);
-							if (x == CUBE_SIZE) x = 0;
-							if (y == CUBE_SIZE) y = 0;
-							if (z == CUBE_SIZE) z = 0;
-							if (h == 360) h = 0;
-						}
-		
-		//
-		//
-		//offline run mode, patterns can be placed above here. 
+			offline_patterns();
 		}
 	}
 
@@ -280,7 +242,7 @@ void func_1() //pattern drawring / network input thread.
 
 int main()
 {
-	cout << "resolution set to " << RESOLUTION_WIDTH << " x " << RESOLUTION_HEIGHT << endl;
+	cout << "resolution set to " << SCR_WIDTH << " x " << SCR_HEIGHT << endl;
 
 	// glfw: initialize and configure
 	// ------------------------------
@@ -345,10 +307,8 @@ int main()
 	// texture coord attribute
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
-
-
-
-	// world space positions of our cubes
+	
+	// generate world space positions of our cubes
 
 	int index = 0;
 	float offset = SIZE_SCALE;
@@ -414,46 +374,22 @@ int main()
 		// render boxes
 		glBindVertexArray(VAO);
 
-		/*sorting not working, maybe oneday
-		for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
-		{
-		glm::mat4 model;
-		model = glm::translate(model, it->second);
-		ourShader.setMat4("model", model);
-		rowi = boxindex / 64;
-		//using mod operation to get individual R G and B values from the display_array to the correct "box index"
-		redvalue = display_array[rowi][boxindex % 64];
-		greenvalue = display_array[rowi][boxindex % 64 + 64];
-		bluevalue = display_array[rowi][boxindex % 64 + 128];
-		//this passes our R G and B values to the vertex shader
-		ourShader.setFloat("red", redvalue);
-		ourShader.setFloat("green", greenvalue);
-		ourShader.setFloat("blue", bluevalue);
-		//I wanted the cubes to be more transparent when off but not so transparent when on.
-		//just noticed transparency works from one direction but is wrong when looking from the other side.
-		alphax = cube_transparency + (redvalue + bluevalue + greenvalue) / 3;
-		//if (alphax > 1.0) { alphax = 1.0f; }
-		ourShader.setFloat("alphaf", alphax);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		*/
-
-		for (boxindex = 0; boxindex < NUM_CUBE; boxindex++)
+		for (int boxindex = 0; boxindex < NUM_CUBE; boxindex++)
 		{
 			// calculate the model matrix for each object and pass it to shader before drawing
 			glm::mat4 model;
 			model = glm::translate(model, translations[boxindex]);
-			float angle = 1.0f;
+			//float angle = 1.0f;
 			//model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 			ourShader.setMat4("model", model);
 
-			//box index is just one long string of 512 LED 'indexes', each layer or "row" is 64 indexes long:
-			rowi = boxindex / (NUM_PLANE);
+			//box index is just one long string of NUM_CUBE LED 'indexes', each layer or "row" is NUM_PLANE indexes long:
+			int rowi = boxindex / (NUM_PLANE);
 
 			//using mod operation to get individual R G and B values from the display_array to the correct "box index"
-			redvalue = display_array[rowi][boxindex % NUM_PLANE];
-			greenvalue = display_array[rowi][boxindex % NUM_PLANE + NUM_PLANE];
-			bluevalue = display_array[rowi][boxindex % NUM_PLANE + (NUM_PLANE*2)];
+			float redvalue = display_array[rowi][boxindex % NUM_PLANE];
+			float greenvalue = display_array[rowi][boxindex % NUM_PLANE + NUM_PLANE];
+			float bluevalue = display_array[rowi][boxindex % NUM_PLANE + (NUM_PLANE*2)];
 
 			//display_array is "ints" in physical cube, but floats in openGL, below turns 0-100, to 0.0f-1.0f
 			redvalue = redvalue / 100;
@@ -466,8 +402,9 @@ int main()
 			ourShader.setFloat("blue", bluevalue);
 						
 			//just noticed transparency works from one direction but is wrong when looking from the other side. 
+			
 			//chose highstest value out of RGB and give the cube that alpha(opaqueness) value. 
-			alphax = redvalue;
+			float alphax = redvalue;
 			if (alphax < bluevalue){
 				alphax = bluevalue;
 			};
@@ -475,14 +412,10 @@ int main()
 			if (alphax < greenvalue){
 				alphax = greenvalue;
 			};
-
-			alphax = alphax + cube_transparency;
-			if (alphax > 1.0f){
-				alphax = 1.0f;
-			};
-			
-			//if (alphax > 1.0) { alphax = 1.0f; }
+				alphax = alphax*(1-TRANSPARENCY) + TRANSPARENCY;
+	
 			ourShader.setFloat("alphaf", alphax);
+			//finally draw the cube
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		}

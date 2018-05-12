@@ -1,33 +1,23 @@
 //set_functions.h
+
 #ifndef set_functions_H
 #define set_functions_H
 
-
-
-//#define NUM_TLCS   12 //how many TLCs in series, (TLC = 15 channels) this is taken from the arduino tlc library.
-///#define NUM_ROWS   8 //how many multiplexed rows
-
-
-//char display_array[CUBE_SIZE][NUM_TLCS * 16];// 8 * 192 (64r-64g-64b)this is where the LED data is actually stored. Channel value is a float between 0 (0%) to 1.0f (100%).
-
-//char display_buffer[CUBE_SIZE][NUM_TLCS * 16];
-
-//Each row can be thought of a chess board 8x8 LEDs, each LED has 3 separate values one for each of R G and B. So each "row" has 3 chess boards of values. 
-
-float h = 0;
+int h = 0;
 int x;
 int y;
 int z;
 int l;
 
-void set(unsigned char row, unsigned char channel, char value) //very simple! set a single value to a specified spot on the matrix. 
+//fundamental set function, not very useful on its own. Feeds a value into the array.  
+void set(unsigned char row, unsigned char channel, char value) 
 {
 display_array[row][NUM_PLANE * 3 - 1 - channel] = value;
 }//set
 
 
 
-//set a whole 
+//set one whole row, note setting r, g and b values gives a shade of "white"
 static void set_row(unsigned char row, char value)
 {
 	int rowlen = (NUM_PLANE * 3);
@@ -40,7 +30,7 @@ static void set_row(unsigned char row, char value)
 }//set_row
 
 
-
+//set the whole cube a single value.
 static void set_all(char value)
 {
 	int row;
@@ -166,35 +156,6 @@ static void set_allhue(int hue)
 
 
 
-
-
-
-
-/*
-void hue_run(int loop, int speed)
-{
-
-	for (l = 0; l<loop; l++)
-	{
-		for (x = 0; x<8; x++)
-			for (y = 0; y<8; y++)
-				for (z = 0; z<8; z++)
-				{
-					set_xhue(x, y, z, h++);
-					if (x == 8) x = 0;
-					if (y == 8) y = 0;
-					if (z == 8) z = 0;
-
-
-
-
-
-
-				}
-
-	}//for loop
-}//
-*/
 
 /*
 
