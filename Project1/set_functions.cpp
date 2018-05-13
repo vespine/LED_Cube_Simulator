@@ -1,14 +1,24 @@
-//set_functions.h
-#include <math.h>
+#include "set_functions.h"
+#include <iostream>
+#include <string>
+#include <thread>
+#include <mutex>
+#include <iostream>
+#include <chrono>
 
-#ifndef set_functions_H
-#define set_functions_H
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+
 
 int h = 0;
 int x;
 int y;
 int z;
 int l;
+
 
 typedef struct {
 	float x;
@@ -26,9 +36,9 @@ float distance3d(float x1, float y1, float z1, float x2, float y2, float z2)
 
 
 //fundamental set function, not very useful on its own. Feeds a value into the array.  
-void set(unsigned char row, unsigned char channel, char value) 
+void set(unsigned char row, unsigned char channel, char value)
 {
-display_array[row][NUM_PLANE * 3 - 1 - channel] = value;
+	display_array[row][NUM_PLANE * 3 - 1 - channel] = value;
 }//set
 
 
@@ -55,7 +65,7 @@ static void set_row(unsigned char row, char value)
 }//set_row
 
 
-//set the whole cube a single value.
+ //set the whole cube a single value.
 static void set_all(char value)
 {
 	int row;
@@ -110,7 +120,7 @@ static void set_xr(char x, char y, char z, char R, char G, char B)
 
 	if (x<0)
 		x = 0;
-	if (x>(CUBE_SIZE-1))
+	if (x>(CUBE_SIZE - 1))
 		x = CUBE_SIZE - 1;
 	if (y<0)
 		y = 0;
@@ -126,7 +136,7 @@ static void set_xr(char x, char y, char z, char R, char G, char B)
 
 	display_array[x][NUM_PLANE * 3 - 1 - y - z * CUBE_SIZE] = R;
 	display_array[x][NUM_PLANE * 3 - 1 - NUM_PLANE - y - z * CUBE_SIZE] = G;
-	display_array[x][NUM_PLANE * 3 - 1 - NUM_PLANE*2- y - z * CUBE_SIZE] = B;
+	display_array[x][NUM_PLANE * 3 - 1 - NUM_PLANE * 2 - y - z * CUBE_SIZE] = B;
 
 }//set_xyzrgb
 
@@ -156,7 +166,7 @@ static void set_xhue(char x, char y, char z, int hue) {
 int icount = 0;
 void setvoxel(int x, int y, int z)
 {
-	
+
 	if (h > 360)
 	{
 		h = 0;
@@ -165,7 +175,7 @@ void setvoxel(int x, int y, int z)
 	set_xhue(x, y, z, h);
 
 	icount++;
-	if (icount == 100) { 
+	if (icount == 100) {
 		icount = 0;
 		h++;
 	}
@@ -216,103 +226,103 @@ static void set_allhue(int hue)
 
 
 
-/*
+ /*
 
-void hue_star()
-{
+ void hue_star()
+ {
 
-	using namespace std::literals;
-	std::this_thread::sleep_for(1ms);
+ using namespace std::literals;
+ std::this_thread::sleep_for(1ms);
 
-	//	set_allhue(funci++);
-	//	if (funci == 360) funci = 1;
-	//	auto lk = g_lock();
+ //	set_allhue(funci++);
+ //	if (funci == 360) funci = 1;
+ //	auto lk = g_lock();
 
-	int loop = 1000;
+ int loop = 1000;
 
-	int h;
-	int x;
-	int y;
-	int z;
-	int l;
-	int add;
-	auto lk = g_lock();
-	for (l = 0; l < loop; l++)
-	{
-		x = (rand() % 800) / 100;
-		y = (rand() % 800) / 100;
-		z = (rand() % 800) / 100;
-		h = (rand() % 3600) / 10;
+ int h;
+ int x;
+ int y;
+ int z;
+ int l;
+ int add;
+ auto lk = g_lock();
+ for (l = 0; l < loop; l++)
+ {
+ x = (rand() % 800) / 100;
+ y = (rand() % 800) / 100;
+ z = (rand() % 800) / 100;
+ h = (rand() % 3600) / 10;
 
-		set_xhue(x, y, z, h);
-		for (add = 0; add < 7; add++)
-		{
-			h = h + 30;
+ set_xhue(x, y, z, h);
+ for (add = 0; add < 7; add++)
+ {
+ h = h + 30;
 
-			set_xhue(x + add, y, z, h);
-			set_xhue(x - add, y, z, h);
-			set_xhue(x, y + add, z, h);
-			set_xhue(x, y - add, z, h);
-			set_xhue(x, y, z + add, h);
-			set_xhue(x, y, z - add, h);
-			set_xhue(x + add, y + add, z, h);
-			set_xhue(x - add, y + add, z, h);
-			set_xhue(x + add, y - add, z, h);
-			set_xhue(x - add, y - add, z, h);
-			set_xhue(x + add, y, z + add, h);
-			set_xhue(x - add, y, z + add, h);
-			set_xhue(x + add, y, z - add, h);
-			set_xhue(x - add, y, z - add, h);
-			//DelayMs(speed);
-			std::this_thread::sleep_for(150ms);
+ set_xhue(x + add, y, z, h);
+ set_xhue(x - add, y, z, h);
+ set_xhue(x, y + add, z, h);
+ set_xhue(x, y - add, z, h);
+ set_xhue(x, y, z + add, h);
+ set_xhue(x, y, z - add, h);
+ set_xhue(x + add, y + add, z, h);
+ set_xhue(x - add, y + add, z, h);
+ set_xhue(x + add, y - add, z, h);
+ set_xhue(x - add, y - add, z, h);
+ set_xhue(x + add, y, z + add, h);
+ set_xhue(x - add, y, z + add, h);
+ set_xhue(x + add, y, z - add, h);
+ set_xhue(x - add, y, z - add, h);
+ //DelayMs(speed);
+ std::this_thread::sleep_for(150ms);
 
-			if (pause == 1) {
-				std::this_thread::sleep_for(150000ms);
-			}
-
-
-
-		}
-
-
-		for (add = 0; add < 7; add++)
-		{
-			std::this_thread::sleep_for(50ms);
-			//DelayMs(speed / 2);
-			set_xr(x + add, y, z, 0, 0, 0);
-			set_xr(x - add, y, z, 0, 0, 0);
-			set_xr(x, y + add, z, 0, 0, 0);
-			set_xr(x, y - add, z, 0, 0, 0);
-			set_xr(x, y, z + add, 0, 0, 0);
-			set_xr(x, y, z - add, 0, 0, 0);
-
-			set_xr(x + add, y + add, z, 0, 0, 0);
-			set_xr(x - add, y + add, z, 0, 0, 0);
-
-			set_xr(x + add, y - add, z, 0, 0, 0);
-			set_xr(x - add, y - add, z, 0, 0, 0);
-
-			set_xr(x + add, y, z + add, 0, 0, 0);
-			set_xr(x - add, y, z + add, 0, 0, 0);
-
-			set_xr(x + add, y, z - add, 0, 0, 0);
-			set_xr(x - add, y, z - add, 0, 0, 0);
+ if (pause == 1) {
+ std::this_thread::sleep_for(150000ms);
+ }
 
 
 
-			std::this_thread::sleep_for(50ms);
-			if (pause == 1) {
-				std::this_thread::sleep_for(150000ms);
-			}
-
-		}
-		//set_all(0);
-	}
-}
+ }
 
 
+ for (add = 0; add < 7; add++)
+ {
+ std::this_thread::sleep_for(50ms);
+ //DelayMs(speed / 2);
+ set_xr(x + add, y, z, 0, 0, 0);
+ set_xr(x - add, y, z, 0, 0, 0);
+ set_xr(x, y + add, z, 0, 0, 0);
+ set_xr(x, y - add, z, 0, 0, 0);
+ set_xr(x, y, z + add, 0, 0, 0);
+ set_xr(x, y, z - add, 0, 0, 0);
 
-*/
+ set_xr(x + add, y + add, z, 0, 0, 0);
+ set_xr(x - add, y + add, z, 0, 0, 0);
+
+ set_xr(x + add, y - add, z, 0, 0, 0);
+ set_xr(x - add, y - add, z, 0, 0, 0);
+
+ set_xr(x + add, y, z + add, 0, 0, 0);
+ set_xr(x - add, y, z + add, 0, 0, 0);
+
+ set_xr(x + add, y, z - add, 0, 0, 0);
+ set_xr(x - add, y, z - add, 0, 0, 0);
+
+
+
+ std::this_thread::sleep_for(50ms);
+ if (pause == 1) {
+ std::this_thread::sleep_for(150000ms);
+ }
+
+ }
+ //set_all(0);
+ }
+ }
+
+
+
+ */
 
 
 vertex point_rotate_around_point(vertex point, vertex center, float rotation_x, float rotation_y, float rotation_z)
@@ -538,7 +548,7 @@ void spheremove(int iterations, int delay)
 			}
 		}
 
-		std::this_thread::sleep_for(10ms);
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		set_all(0);
 	}
 
@@ -550,7 +560,7 @@ void spheremove(int iterations, int delay)
 void effect_rotate_random_pixels(int iterations, int delay, int pixels)
 {
 
-	
+
 	//MSVS won't compile variable length array
 	vertex points[50];
 	vertex rotated[50];
@@ -578,9 +588,9 @@ void effect_rotate_random_pixels(int iterations, int delay, int pixels)
 		points[i].z = fz;
 
 		setvoxel((int)points[i].x, (int)points[i].y, (int)points[i].z);
-		
+
 	}
-	
+
 
 	for (i = 0; i<iterations; i++)
 	{
@@ -604,5 +614,3 @@ void effect_rotate_random_pixels(int iterations, int delay, int pixels)
 
 	fill(0x00);
 }
-
-#endif

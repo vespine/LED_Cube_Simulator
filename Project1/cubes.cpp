@@ -18,6 +18,7 @@
 #include <iostream>
 #include <chrono>
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,14 +29,14 @@
 #include <boost/asio.hpp>
 
 
-#define ONLINE FALSE		//RUN MODE ONLINE: TRUE = from network, FALSE = internal patters from patterns.h
+#define ONLINE TRUE		//RUN MODE ONLINE: TRUE = from network, FALSE = internal patters from patterns.h
 #define PATTERN_SERVER "raspberrypi" //host name of LED CUBE Pattern generator
 #define SCR_WIDTH 1920
 #define SCR_HEIGHT 1080
 #define TRANSPARENCY 0.1f	//Blank LED "opaqueness" : 0.0f-1.0f (0% = invisible - 100% = solid), "lit" leds are proportionatelly less translucent.
 #define CUBE_SIZE 8 // 8 is default size, changing this value is not completely implemented. Use values above 32 at your own risk.
-#define LED_SCALE 1.0f		//default 1.0f
-#define SIZE_SCALE 1.0f		//default 1.0f
+#define LED_SCALE .80f		//default 1.0f
+#define SIZE_SCALE .80f		//default 1.0f
 
 const int NUM_PLANE = CUBE_SIZE * CUBE_SIZE;
 const int NUM_CUBE = CUBE_SIZE * CUBE_SIZE * CUBE_SIZE;
