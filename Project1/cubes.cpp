@@ -16,6 +16,7 @@
 #include <string>
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include <iostream>
 #include <chrono>
 #include <map>
@@ -43,12 +44,8 @@
 const int NUM_PLANE = CUBE_SIZE * CUBE_SIZE;
 const int NUM_CUBE = CUBE_SIZE * CUBE_SIZE * CUBE_SIZE;
 
-char display_array[CUBE_SIZE][NUM_PLANE * 3];
-
-#include "set_functions.h"
-#include "patterns.h"
-
-//using boost::asio::ip::tcp;
+char display_array[CUBE_SIZE][NUM_PLANE * 3]; // patterns (and the network feed) draw here
+char presented_array[CUBE_SIZE][NUM_PLANE * 3]; // last complete frame, this is what gets rendered
 
 //thread lock
 
@@ -58,16 +55,31 @@ auto g_lock()
 	return std::unique_lock<decltype(m)>(m); // RAII based lock
 }
 
+//flags shared between the render thread and the pattern thread
+std::atomic<bool> pause{ false }; //spacebar toggles this, patterns hold at their next delay_ms
+std::atomic<bool> threadrunning{ false }; //flag for second thread
+std::atomic<bool> termin{ false }; //flag for thread termination
+
+struct PatternStopped {}; //thrown by delay_ms to unwind out of a running pattern when quitting
+
+//publish the finished frame in display_array so the renderer never shows a half drawn one
+void present()
+{
+	auto lk = g_lock();
+	memcpy(presented_array, display_array, sizeof(presented_array));
+}
+
+#include "set_functions.h"
+#include "patterns.h"
+
+//using boost::asio::ip::tcp;
+
 //Some GLFW inits
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
-
-//initialize some flags
-bool pause = 0; //used for spacebar to pause pattern, needs work
-bool threadrunning = 0; //flag for second thread
-bool termin = 0; //flag for thread termination, needs work 
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 glm::vec3 translation;
 
@@ -202,9 +214,16 @@ void func_1() //pattern drawring / network input thread.
 
 	if (ONLINE != TRUE)
 	{
-		while (termin == 0)
+		try
 		{
-			offline_patterns();
+			while (termin == 0)
+			{
+				offline_patterns();
+			}
+		}
+		catch (const PatternStopped&)
+		{
+			//quitting, delay_ms unwound us out of the running pattern
 		}
 	}
 	/*
@@ -231,6 +250,7 @@ void func_1() //pattern drawring / network input thread.
 				boost::asio::connect(socket, endpoint_iterator);
 				boost::system::error_code error;
 				size_t len = socket.read_some(boost::asio::buffer(display_array), error);
+				present(); //the renderer draws presented_array, publish the received frame
 
 				std::this_thread::sleep_for(2ms); //prevent free running loop in thread
 			}
@@ -272,6 +292,7 @@ int main()
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
+	glfwSetKeyCallback(window, key_callback);
 
 	// tell GLFW to capture our mouse
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -294,7 +315,15 @@ int main()
 	// build and compile shader zprogram
 	// ------------------------------------
 
-	std::ifstream vsFile("C:\\Users\\vespine\\source\\repos\\vespine\\LED_Cube_Simulator\\Project1\\1LedCube.vs");
+	// the build copies the shaders next to the exe, so look for them there
+	char exePath[MAX_PATH];
+	GetModuleFileNameA(NULL, exePath, MAX_PATH);
+	std::string exeDir(exePath);
+	exeDir = exeDir.substr(0, exeDir.find_last_of("\\/") + 1);
+	const std::string vsPath = exeDir + "1LedCube.vs";
+	const std::string fsPath = exeDir + "1LedCube.fs";
+
+	std::ifstream vsFile(vsPath);
 	if (!vsFile.good()) {
 		std::cout << "Vertex shader file not found or not readable\n";
 	}
@@ -302,14 +331,14 @@ int main()
 		std::cout << "Vertex shader file is okay\n";
 	}
 
-	std::ifstream fsFile("C:\\Users\\vespine\\source\\repos\\vespine\\LED_Cube_Simulator\\Project1\\1LedCube.fs");
+	std::ifstream fsFile(fsPath);
 	if (!fsFile.good()) {
 		std::cout << "Fragment shader file not found or not readable\n";
 	}
 	else {
 		std::cout << "Fragment shader file is okay\n";
 	}
-	Shader ourShader("C:\\Users\\vespine\\source\\repos\\vespine\\LED_Cube_Simulator\\Project1\\1LedCube.vs", "C:\\Users\\vespine\\source\\repos\\vespine\\LED_Cube_Simulator\\Project1\\1LedCube.fs");
+	Shader ourShader(vsPath.c_str(), fsPath.c_str());
 
 	//configure buffer objects 
 	glGenVertexArrays(1, &VAO);
@@ -339,9 +368,10 @@ int main()
 			for (int x = -CUBE_SIZE; x < CUBE_SIZE; x += 2)
 			{
 				//glm::vec3 translation;
-				translation.x = (float)x / 4.0f * offset;
-				translation.y = (float)y / 4.0f * offset;
-				translation.z = (float)z / 4.0f * offset;
+				// +1 centres the grid on the origin (the loops run -CUBE_SIZE to CUBE_SIZE-2)
+				translation.x = (float)(x + 1) / 4.0f * offset;
+				translation.y = (float)(y + 1) / 4.0f * offset;
+				translation.z = (float)(z + 1) / 4.0f * offset;
 				translations[index++] = translation;
 			}
 		}
@@ -366,9 +396,6 @@ int main()
 		processInput(window);
 
 		//sort needs to go here
-		std::cout << "Camera position: X=" << camera.Position.x
-			<< " Y=" << camera.Position.y
-			<< " Z=" << camera.Position.z << std::endl;
 		std::map<float, glm::vec3> sorted;
 		for (unsigned int i = 0; i < NUM_CUBE; i++)
 		{
@@ -388,12 +415,22 @@ int main()
 		ourShader.use();
 
 		// pass projection matrix to shader (note that in this case it could change every frame)
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		int fbWidth, fbHeight;
+		glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+		float aspect = (fbHeight > 0) ? (float)fbWidth / (float)fbHeight : 1.0f; // height is 0 while minimised
+		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), aspect, 0.1f, 100.0f);
 		ourShader.setMat4("projection", projection);
 
 		// camera/view transformation
 		glm::mat4 view = camera.GetViewMatrix();
 		ourShader.setMat4("view", view);
+
+		// take a private copy of the latest complete frame so the pattern thread is never blocked for long
+		static char frame[CUBE_SIZE][NUM_PLANE * 3];
+		{
+			auto lk = g_lock();
+			memcpy(frame, presented_array, sizeof(frame));
+		}
 
 		// render boxes
 		glBindVertexArray(VAO);
@@ -411,9 +448,9 @@ int main()
 			int rowi = boxindex / (NUM_PLANE);
 
 			//using mod operation to get individual R G and B values from the display_array to the correct "box index"
-			float redvalue = display_array[rowi][boxindex % NUM_PLANE];
-			float greenvalue = display_array[rowi][boxindex % NUM_PLANE + NUM_PLANE];
-			float bluevalue = display_array[rowi][boxindex % NUM_PLANE + (NUM_PLANE * 2)];
+			float redvalue = frame[rowi][boxindex % NUM_PLANE];
+			float greenvalue = frame[rowi][boxindex % NUM_PLANE + NUM_PLANE];
+			float bluevalue = frame[rowi][boxindex % NUM_PLANE + (NUM_PLANE * 2)];
 
 			//display_array is "ints" in physical cube, but floats in openGL, below turns 0-100, to 0.0f-1.0f
 			redvalue = redvalue / 100;
@@ -479,10 +516,14 @@ void processInput(GLFWwindow* window)
 		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.ProcessKeyboard(RIGHT, deltaTime);
+}
 
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+// glfw: single key presses (fires once per press, unlike polling in processInput)
+// ---------------------------------------------------------------------------------------------
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
 		pause = !pause;
-
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes

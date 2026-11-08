@@ -32,10 +32,31 @@ display_array[row][NUM_PLANE * 3 - 1 - channel] = value;
 }//set
 
 
+//show the frame drawn so far, then wait. Every pattern delay should go through here:
+//it is what makes a frame visible and what lets pause and quit take effect immediately.
 void delay_ms(int ms)
 {
+	using namespace std::chrono;
+	const milliseconds slice(10);
 
-	std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+	present();
+
+	while (pause && !termin)
+		std::this_thread::sleep_for(slice);
+
+	const auto deadline = steady_clock::now() + milliseconds(ms);
+	while (!termin)
+	{
+		const auto remaining = deadline - steady_clock::now();
+		if (remaining <= steady_clock::duration::zero())
+			return;
+		if (remaining > slice)
+			std::this_thread::sleep_for(slice);
+		else
+			std::this_thread::sleep_for(remaining);
+	}
+
+	throw PatternStopped();
 }
 
 
@@ -73,17 +94,18 @@ static void set_rowRGB(unsigned char row, char R, char G, char B)
 
 	int ch;
 
-	for (ch = 0; ch<64; ch++)
+	//same channel order as set_xr: B block first, then G, then R
+	for (ch = 0; ch<NUM_PLANE; ch++)
 	{
-		display_array[row][ch] = R;
+		display_array[row][ch] = B;
 	}
-	for (ch = 64; ch<128; ch++)
+	for (ch = NUM_PLANE; ch<NUM_PLANE * 2; ch++)
 	{
 		display_array[row][ch] = G;
 	}
-	for (ch = 128; ch<192; ch++)
+	for (ch = NUM_PLANE * 2; ch<NUM_PLANE * 3; ch++)
 	{
-		display_array[row][ch] = B;
+		display_array[row][ch] = R;
 	}
 
 }//set_rowRGB
@@ -108,18 +130,9 @@ static void set_xr(char x, char y, char z, char R, char G, char B)
 {
 
 
-	if (x<0)
-		x = 0;
-	if (x>(CUBE_SIZE-1))
-		x = CUBE_SIZE - 1;
-	if (y<0)
-		y = 0;
-	if (y>(CUBE_SIZE - 1))
-		y = CUBE_SIZE - 1;
-	if (z<0)
-		z = 0;
-	if (z>(CUBE_SIZE - 1))
-		z = CUBE_SIZE - 1;
+	//points outside the cube are not drawn
+	if (x<0 || x>(CUBE_SIZE - 1) || y<0 || y>(CUBE_SIZE - 1) || z<0 || z>(CUBE_SIZE - 1))
+		return;
 
 
 
@@ -135,7 +148,7 @@ static void set_xhue(char x, char y, char z, int hue) {
 	char re, gr, bl;
 	hue = hue % 360;
 	if (hue <= 120) {
-		re = ((120 - hue) * 100) / 100;
+		re = ((120 - hue) * 100) / 120;
 		gr = (hue * 100) / 120;
 		bl = 0;
 
@@ -488,7 +501,7 @@ void linespin(int iterations, int delay)
 			line_3d((int)top_z, (int)top_x, (int)top_y, (int)bot_z, (int)bot_x, (int)bot_y);
 		}
 
-		std::this_thread::sleep_for(50ms);
+		delay_ms(delay);
 		set_all(0);
 	}
 
@@ -538,7 +551,7 @@ void spheremove(int iterations, int delay)
 			}
 		}
 
-		std::this_thread::sleep_for(10ms);
+		delay_ms(delay);
 		set_all(0);
 	}
 
@@ -554,6 +567,7 @@ void effect_rotate_random_pixels(int iterations, int delay, int pixels)
 	//MSVS won't compile variable length array
 	vertex points[50];
 	vertex rotated[50];
+	if (pixels > 50) pixels = 50; //the arrays above only hold 50 points
 
 	float fy, fx, fz;
 	int x, y, z;
