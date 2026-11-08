@@ -12,11 +12,13 @@
 #include <learnopengl/mesh.h>
 
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <thread>
 #include <mutex>
 #include <iostream>
 #include <chrono>
+#include <map>
 
 #include <math.h>
 #include <stdio.h>
@@ -25,11 +27,11 @@
 
 #include <windows.h>
 #include <iostream>
-#include <boost/array.hpp>
-#include <boost/asio.hpp>
+//#include <boost/array.hpp>
+//#include <boost/asio.hpp>
 
 
-#define ONLINE TRUE		//RUN MODE ONLINE: TRUE = from network, FALSE = internal patters from patterns.h
+#define ONLINE FALSE		//RUN MODE ONLINE: TRUE = from network, FALSE = internal patters from patterns.h
 #define PATTERN_SERVER "raspberrypi" //host name of LED CUBE Pattern generator
 #define SCR_WIDTH 1920
 #define SCR_HEIGHT 1080
@@ -46,7 +48,7 @@ char display_array[CUBE_SIZE][NUM_PLANE * 3];
 #include "set_functions.h"
 #include "patterns.h"
 
-using boost::asio::ip::tcp;
+//using boost::asio::ip::tcp;
 
 //thread lock
 
@@ -60,7 +62,7 @@ auto g_lock()
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void processInput(GLFWwindow *window);
+void processInput(GLFWwindow* window);
 
 //initialize some flags
 bool pause = 0; //used for spacebar to pause pattern, needs work
@@ -205,7 +207,7 @@ void func_1() //pattern drawring / network input thread.
 			offline_patterns();
 		}
 	}
-
+	/*
 	if (ONLINE == TRUE)
 	{
 		//online run mode, connect to pattern server
@@ -237,7 +239,7 @@ void func_1() //pattern drawring / network input thread.
 		{
 			std::cerr << e.what() << std::endl;
 		}
-	}
+	}*/
 }
 
 
@@ -287,12 +289,28 @@ int main()
 	//glEnable(GL_DEPTH_TEST); //culling faces does not work as I expected for translucent cubes, looks better with it off.
 	glEnable(GL_BLEND); //required for translucency 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
+
 
 	// build and compile shader zprogram
 	// ------------------------------------
-	Shader ourShader("1LedCube.vs", "1LedCube.fs");
-	
+
+	std::ifstream vsFile("C:\\Users\\vespine\\source\\repos\\vespine\\LED_Cube_Simulator\\Project1\\1LedCube.vs");
+	if (!vsFile.good()) {
+		std::cout << "Vertex shader file not found or not readable\n";
+	}
+	else {
+		std::cout << "Vertex shader file is okay\n";
+	}
+
+	std::ifstream fsFile("C:\\Users\\vespine\\source\\repos\\vespine\\LED_Cube_Simulator\\Project1\\1LedCube.fs");
+	if (!fsFile.good()) {
+		std::cout << "Fragment shader file not found or not readable\n";
+	}
+	else {
+		std::cout << "Fragment shader file is okay\n";
+	}
+	Shader ourShader("C:\\Users\\vespine\\source\\repos\\vespine\\LED_Cube_Simulator\\Project1\\1LedCube.vs", "C:\\Users\\vespine\\source\\repos\\vespine\\LED_Cube_Simulator\\Project1\\1LedCube.fs");
+
 	//configure buffer objects 
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -308,7 +326,7 @@ int main()
 	// texture coord attribute
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
-	
+
 	// generate world space positions of our cubes
 
 	int index = 0;
@@ -321,9 +339,9 @@ int main()
 			for (int x = -CUBE_SIZE; x < CUBE_SIZE; x += 2)
 			{
 				//glm::vec3 translation;
-				translation.x = (float)x / 4.0f*offset;
-				translation.y = (float)y / 4.0f*offset;
-				translation.z = (float)z / 4.0f*offset;
+				translation.x = (float)x / 4.0f * offset;
+				translation.y = (float)y / 4.0f * offset;
+				translation.z = (float)z / 4.0f * offset;
 				translations[index++] = translation;
 			}
 		}
@@ -348,14 +366,19 @@ int main()
 		processInput(window);
 
 		//sort needs to go here
-
+		std::cout << "Camera position: X=" << camera.Position.x
+			<< " Y=" << camera.Position.y
+			<< " Z=" << camera.Position.z << std::endl;
 		std::map<float, glm::vec3> sorted;
 		for (unsigned int i = 0; i < NUM_CUBE; i++)
 		{
-			float distance = glm::length(camera.Position - translation[i]);
+			
+			float distance = glm::length(camera.Position - translations[i]);
+		
+
 			sorted[distance] = translations[i];
 		}
-		
+
 		// render
 		// ------
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -363,7 +386,7 @@ int main()
 
 		// activate shader
 		ourShader.use();
-		
+
 		// pass projection matrix to shader (note that in this case it could change every frame)
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		ourShader.setMat4("projection", projection);
@@ -371,14 +394,14 @@ int main()
 		// camera/view transformation
 		glm::mat4 view = camera.GetViewMatrix();
 		ourShader.setMat4("view", view);
-		
+
 		// render boxes
 		glBindVertexArray(VAO);
 
 		for (int boxindex = 0; boxindex < NUM_CUBE; boxindex++)
 		{
 			// calculate the model matrix for each object and pass it to shader before drawing
-			glm::mat4 model;
+			glm::mat4 model(1.0f); // must be identity: GLM 0.9.9+ leaves default-constructed matrices uninitialised
 			model = glm::translate(model, translations[boxindex]);
 			//float angle = 1.0f;
 			//model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
@@ -390,37 +413,37 @@ int main()
 			//using mod operation to get individual R G and B values from the display_array to the correct "box index"
 			float redvalue = display_array[rowi][boxindex % NUM_PLANE];
 			float greenvalue = display_array[rowi][boxindex % NUM_PLANE + NUM_PLANE];
-			float bluevalue = display_array[rowi][boxindex % NUM_PLANE + (NUM_PLANE*2)];
+			float bluevalue = display_array[rowi][boxindex % NUM_PLANE + (NUM_PLANE * 2)];
 
 			//display_array is "ints" in physical cube, but floats in openGL, below turns 0-100, to 0.0f-1.0f
 			redvalue = redvalue / 100;
 			greenvalue = greenvalue / 100;
 			bluevalue = bluevalue / 100;
-			
+
 			//this passes our R G and B values to the vertex shader 
 			ourShader.setFloat("red", redvalue);
 			ourShader.setFloat("green", greenvalue);
 			ourShader.setFloat("blue", bluevalue);
-						
+
 			//just noticed transparency works from one direction but is wrong when looking from the other side. 
-			
+
 			//chose highstest value out of RGB and give the cube that alpha(opaqueness) value. 
 			float alphax = redvalue;
-			if (alphax < bluevalue){
+			if (alphax < bluevalue) {
 				alphax = bluevalue;
 			};
 
-			if (alphax < greenvalue){
+			if (alphax < greenvalue) {
 				alphax = greenvalue;
 			};
-				alphax = alphax*(1-TRANSPARENCY) + TRANSPARENCY;
-	
+			alphax = alphax * (1 - TRANSPARENCY) + TRANSPARENCY;
+
 			ourShader.setFloat("alphaf", alphax);
 			//finally draw the cube
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		}
-		
+
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
 		glfwSwapBuffers(window);
@@ -443,7 +466,7 @@ int main()
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window)
+void processInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
