@@ -7,6 +7,15 @@ void offline_patterns()
 {
 //offline patterns go here
 
+#if RUN_RASTER_TEST
+#if GAMMA_COMPARE
+	raster_gamma_compare(6.0f);
+#else
+	raster_circle(10.0f);
+#endif
+	return;
+#endif
+
 
 	effect_rotate_random_pixels(4000, 5, 50);
 	

@@ -40,6 +40,11 @@
 #define CUBE_SIZE 8 // 8 is default size, changing this value is not completely implemented. Use values above 32 at your own risk.
 #define LED_SCALE .80f		//default 1.0f
 #define SIZE_SCALE .80f		//default 1.0f
+#define FRAME_MS 40			//time per frame for raster patterns. 40ms = 25Hz, the likely limit of the Pi to cube serial link
+#define RUN_RASTER_TEST 1	//1 = run the raster test instead of the normal patterns in patterns.h
+#define ADDITIVE_BLEND 1	//1 = LEDs add light (brightness is accurate from every angle), 0 = original translucent look
+#define SCREEN_GAMMA 1.0f	//corrects for the monitor so 50% looks like half the light, as PWM LEDs do. 1.0f = no correction
+#define GAMMA_COMPARE 0		//1 = spread the correction over the layers: bottom layer 1.0f, up to SCREEN_GAMMA on the top layer
 
 const int NUM_PLANE = CUBE_SIZE * CUBE_SIZE;
 const int NUM_CUBE = CUBE_SIZE * CUBE_SIZE * CUBE_SIZE;
@@ -70,6 +75,7 @@ void present()
 }
 
 #include "set_functions.h"
+#include "raster.h"
 #include "patterns.h"
 
 //using boost::asio::ip::tcp;
@@ -80,6 +86,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void show_light_fade(GLFWwindow* window);
 
 glm::vec3 translation;
 
@@ -293,6 +300,7 @@ int main()
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 	glfwSetKeyCallback(window, key_callback);
+	show_light_fade(window);
 
 	// tell GLFW to capture our mouse
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -309,7 +317,11 @@ int main()
 	// -----------------------------
 	//glEnable(GL_DEPTH_TEST); //culling faces does not work as I expected for translucent cubes, looks better with it off.
 	glEnable(GL_BLEND); //required for translucency 
+#if ADDITIVE_BLEND
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+#else
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+#endif
 
 
 	// build and compile shader zprogram
@@ -408,7 +420,11 @@ int main()
 
 		// render
 		// ------
+#if ADDITIVE_BLEND
+		glClearColor(0.02f, 0.02f, 0.03f, 1.0f); // added light needs a dark background to show up against
+#else
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+#endif
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// activate shader
@@ -457,7 +473,26 @@ int main()
 			greenvalue = greenvalue / 100;
 			bluevalue = bluevalue / 100;
 
-			//this passes our R G and B values to the vertex shader 
+#if ADDITIVE_BLEND
+			// a constant alpha keeps on-screen brightness proportional to the LED value: each
+			// pixel sees a front and a back face at 0.5, adding up to exactly the value.
+			// The small constant keeps unlit LEDs faintly visible so the grid can be seen.
+#if GAMMA_COMPARE
+			const float displayGamma = 1.0f + (SCREEN_GAMMA - 1.0f) * (float)rowi / (float)(CUBE_SIZE - 1);
+#else
+			const float displayGamma = SCREEN_GAMMA;
+#endif
+			redvalue = powf(redvalue, 1.0f / displayGamma);
+			greenvalue = powf(greenvalue, 1.0f / displayGamma);
+			bluevalue = powf(bluevalue, 1.0f / displayGamma);
+
+			const float unlitGlow = TRANSPARENCY * 0.3f;
+			redvalue += unlitGlow;
+			greenvalue += unlitGlow;
+			bluevalue += unlitGlow;
+#endif
+
+			//this passes our R G and B values to the vertex shader
 			ourShader.setFloat("red", redvalue);
 			ourShader.setFloat("green", greenvalue);
 			ourShader.setFloat("blue", bluevalue);
@@ -473,7 +508,11 @@ int main()
 			if (alphax < greenvalue) {
 				alphax = greenvalue;
 			};
+#if ADDITIVE_BLEND
+			alphax = 0.5f;
+#else
 			alphax = alphax * (1 - TRANSPARENCY) + TRANSPARENCY;
+#endif
 
 			ourShader.setFloat("alphaf", alphax);
 			//finally draw the cube
@@ -522,8 +561,32 @@ void processInput(GLFWwindow* window)
 // ---------------------------------------------------------------------------------------------
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+	if (action != GLFW_PRESS)
+		return;
+
+	if (key == GLFW_KEY_SPACE)
 		pause = !pause;
+
+	//dial in how far the light of a line reaches
+	if (key == GLFW_KEY_UP && light_fade_percent < 90)
+	{
+		light_fade_percent += 5;
+		show_light_fade(window);
+	}
+	if (key == GLFW_KEY_DOWN && light_fade_percent > 50)
+	{
+		light_fade_percent -= 5;
+		show_light_fade(window);
+	}
+}
+
+// show the current line fade in the window title and the console
+// ---------------------------------------------------------------------------------------------
+void show_light_fade(GLFWwindow* window)
+{
+	const std::string text = "Fade: " + std::to_string(light_fade_percent.load()) + "%";
+	std::cout << text << std::endl;
+	glfwSetWindowTitle(window, ("LED Cube - " + text + " (Up/Down to change)").c_str());
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
