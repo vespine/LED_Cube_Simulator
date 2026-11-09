@@ -144,6 +144,7 @@
   <ItemGroup>
     <ClInclude Include="patterns.h" />
     <ClInclude Include="raster.h" />
+    <ClInclude Include="test_patterns.h" />
     <ClInclude Include="set_functions.h" />
   </ItemGroup>
   <ItemGroup>

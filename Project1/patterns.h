@@ -11,7 +11,7 @@ void offline_patterns()
 #if GAMMA_COMPARE
 	raster_gamma_compare(6.0f);
 #else
-	raster_circle(10.0f);
+	raster_test_frame();
 #endif
 	return;
 #endif

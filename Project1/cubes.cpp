@@ -76,6 +76,7 @@ void present()
 
 #include "set_functions.h"
 #include "raster.h"
+#include "test_patterns.h"
 #include "patterns.h"
 
 //using boost::asio::ip::tcp;
@@ -86,7 +87,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-void show_light_fade(GLFWwindow* window);
+void show_status(GLFWwindow* window);
 
 glm::vec3 translation;
 
@@ -300,7 +301,7 @@ int main()
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 	glfwSetKeyCallback(window, key_callback);
-	show_light_fade(window);
+	show_status(window);
 
 	// tell GLFW to capture our mouse
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -571,22 +572,43 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (key == GLFW_KEY_UP && light_fade_percent < 90)
 	{
 		light_fade_percent += 5;
-		show_light_fade(window);
+		show_status(window);
 	}
 	if (key == GLFW_KEY_DOWN && light_fade_percent > 50)
 	{
 		light_fade_percent -= 5;
-		show_light_fade(window);
+		show_status(window);
+	}
+
+	//animation speed: 25% steps up to normal speed, 50% steps above it
+	if (key == GLFW_KEY_RIGHT && speed_percent < 400)
+	{
+		speed_percent += (speed_percent < 100) ? 25 : 50;
+		show_status(window);
+	}
+	if (key == GLFW_KEY_LEFT && speed_percent > 25)
+	{
+		speed_percent -= (speed_percent <= 100) ? 25 : 50;
+		show_status(window);
+	}
+
+	//choose which raster test is running
+	if (key >= GLFW_KEY_1 && key < GLFW_KEY_1 + RASTER_TEST_COUNT)
+	{
+		active_test = key - GLFW_KEY_1 + 1;
+		show_status(window);
 	}
 }
 
 // show the current line fade in the window title and the console
 // ---------------------------------------------------------------------------------------------
-void show_light_fade(GLFWwindow* window)
+void show_status(GLFWwindow* window)
 {
-	const std::string text = "Fade: " + std::to_string(light_fade_percent.load()) + "%";
+	const std::string text = std::string(raster_test_names[active_test.load()])
+		+ " | Fade " + std::to_string(light_fade_percent.load()) + "%"
+		+ " | Speed " + std::to_string(speed_percent.load()) + "%";
 	std::cout << text << std::endl;
-	glfwSetWindowTitle(window, ("LED Cube - " + text + " (Up/Down to change)").c_str());
+	glfwSetWindowTitle(window, ("LED Cube - " + text + "   (1-5 test, Up/Down fade, Left/Right speed)").c_str());
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes

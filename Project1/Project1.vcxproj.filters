@@ -32,6 +32,9 @@
     <ClInclude Include="raster.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="test_patterns.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="1LedCube.fs">

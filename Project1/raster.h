@@ -61,7 +61,7 @@ void canvas_show()
 	delay_ms(FRAME_MS);
 }
 
-std::atomic<int> light_fade_percent{ 60 };
+std::atomic<int> light_fade_percent{ 65 };
 
 //how a point at fraction f of the way between two LEDs is shared between them.
 //The two always add up to 1, so a point keeps its brightness as it moves.
@@ -145,90 +145,60 @@ void draw_line(float x1, float y1, float z1, float x2, float y2, float z2, float
 			}
 }
 
-//test: a white line pinned at one corner of the front face, its other end sweeping a
-//quarter turn and back like a windscreen wiper. The line is longer than the cube so
-//that it reaches the far corner when it passes through the diagonal.
-void raster_wiper(float seconds_per_sweep_and_back)
+//brightness of an LED that is this far from the surface of a shape
+float surface_brightness(float distance, float fade_distance)
 {
-	const int frames = (int)(seconds_per_sweep_and_back * 1000.0f / FRAME_MS);
-	const float length = (CUBE_SIZE - 1) * 1.5f;
-
-	for (int frame = 0; frame < frames; frame++)
-	{
-		const float phase = 6.2831853f * (float)frame / (float)frames;
-		const float angle = 0.78539816f * (1.0f - cosf(phase)); //0 to 90 degrees and back
-
-		canvas_clear();
-		draw_line(0.0f, 0.0f, 0.0f, length * cosf(angle), length * sinf(angle), 0.0f, 1.0f, 1.0f, 1.0f);
-		canvas_show();
-	}
+	return (distance < fade_distance) ? 1.0f - distance / fade_distance : 0.0f;
 }
 
-//test: one white point of light tracing a circle on the front face of the cube. The
-//diameter is the width of the cube, so it touches each edge and cuts inside the corners.
-void raster_circle(float seconds_per_lap)
+//a hollow ball of light
+void draw_sphere(float cx, float cy, float cz, float radius, float r, float g, float b)
 {
-	const int frames = (int)(seconds_per_lap * 1000.0f / FRAME_MS);
-	const float middle = (CUBE_SIZE - 1) / 2.0f;
+	const float fade_distance = light_fade_percent / 100.0f;
 
-	for (int frame = 0; frame < frames; frame++)
-	{
-		const float angle = 6.2831853f * (float)frame / (float)frames;
-
-		canvas_clear();
-		draw_point(middle + middle * cosf(angle), middle + middle * sinf(angle), 0.0f, 1.0f, 1.0f, 1.0f);
-		canvas_show();
-	}
+	for (int x = 0; x < CUBE_SIZE; x++)
+		for (int y = 0; y < CUBE_SIZE; y++)
+			for (int z = 0; z < CUBE_SIZE; z++)
+			{
+				const float distance = fabsf(distance3d((float)x, (float)y, (float)z, cx, cy, cz) - radius);
+				const float brightness = surface_brightness(distance, fade_distance);
+				canvas_add(x, y, z, r * brightness, g * brightness, b * brightness);
+			}
 }
 
-//test: identical white points on every layer moving in step. With GAMMA_COMPARE on,
-//each layer is displayed with a different brightness correction, to compare them
-void raster_gamma_compare(float seconds_per_bounce)
+//a solid ball of light, full brightness inside and fading out from its surface
+void draw_ball(float cx, float cy, float cz, float radius, float r, float g, float b)
 {
-	const int frames = (int)(seconds_per_bounce * 1000.0f / FRAME_MS);
-	const float middle = (CUBE_SIZE - 1) / 2.0f;
+	const float fade_distance = light_fade_percent / 100.0f;
 
-	for (int frame = 0; frame < frames; frame++)
-	{
-		const float phase = 6.2831853f * (float)frame / (float)frames;
-
-		canvas_clear();
-		for (int layer = 0; layer < CUBE_SIZE; layer++)
-			draw_point((float)layer, middle + middle * sinf(phase), 3.0f, 1.0f, 1.0f, 1.0f);
-		canvas_show();
-	}
+	for (int x = 0; x < CUBE_SIZE; x++)
+		for (int y = 0; y < CUBE_SIZE; y++)
+			for (int z = 0; z < CUBE_SIZE; z++)
+			{
+				const float outside = distance3d((float)x, (float)y, (float)z, cx, cy, cz) - radius;
+				const float brightness = (outside <= 0.0f) ? 1.0f : surface_brightness(outside, fade_distance);
+				canvas_add(x, y, z, r * brightness, g * brightness, b * brightness);
+			}
 }
 
-//test: four points of light, each bouncing along its own row at a different speed
-void raster_bouncing_points()
+//a flat sheet of light. (nx, ny, nz) is the direction the sheet faces, and position
+//is how far along that direction it sits, measured from LED (0, 0, 0)
+void draw_sheet(float nx, float ny, float nz, float position, float r, float g, float b)
 {
-	struct Bouncer { float layer; int bounces; float r, g, b; };
+	const float fade_distance = light_fade_percent / 100.0f;
+	const float length = sqrtf(nx * nx + ny * ny + nz * nz);
+	nx /= length;
+	ny /= length;
+	nz /= length;
 
-	//all four line up again after LOOP_SECONDS, so "bounces" is per loop:
-	//with a 24 second loop, 8 = 3s per bounce, 4 = 6s, 2 = 12s, 1 = 24s
-	const float LOOP_SECONDS = 24.0f;
-	const Bouncer bouncers[] = {
-		{ 6.0f, 8, 1.0f, 1.0f, 1.0f }, //white, fastest
-		{ 4.0f, 4, 1.0f, 0.0f, 0.0f }, //red
-		{ 3.0f, 2, 0.0f, 1.0f, 0.0f }, //green
-		{ 1.0f, 1, 0.0f, 0.3f, 1.0f }, //blue, slowest
-	};
-
-	const int frames = (int)(LOOP_SECONDS * 1000.0f / FRAME_MS);
-	const float middle = (CUBE_SIZE - 1) / 2.0f;
-
-	for (int frame = 0; frame < frames; frame++)
-	{
-		canvas_clear();
-
-		for (const Bouncer& b : bouncers)
-		{
-			const float phase = 6.2831853f * (float)b.bounces * (float)frame / (float)frames;
-			draw_point(b.layer, middle + middle * sinf(phase), 3.0f, b.r, b.g, b.b);
-		}
-
-		canvas_show();
-	}
+	for (int x = 0; x < CUBE_SIZE; x++)
+		for (int y = 0; y < CUBE_SIZE; y++)
+			for (int z = 0; z < CUBE_SIZE; z++)
+			{
+				const float distance = fabsf((float)x * nx + (float)y * ny + (float)z * nz - position);
+				const float brightness = surface_brightness(distance, fade_distance);
+				canvas_add(x, y, z, r * brightness, g * brightness, b * brightness);
+			}
 }
 
 #endif
